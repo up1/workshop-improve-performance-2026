@@ -116,3 +116,22 @@ SELECT pg_stat_statements_reset();
 * Use a separate table for login audit to avoid bloating the users table
   * Use async/await for better readability and error handling
   * Use messaging queue (e.g., RabbitMQ, Kafka) for login audit to decouple from the main login flow and improve performance
+* Scaling with PM2 to utilize multiple CPU cores and manage application processes
+
+## Scaling with PM2
+```
+# Install PM2 globally (once)
+$npm install -g pm2
+
+# Start with cluster mode
+$pm2 start ecosystem.config.js
+
+# Monitor
+$pm2 monit
+
+# Reload zero-downtime (rolling restart)
+$pm2 reload login-api
+
+# Stop
+$pm2 stop login-api
+```

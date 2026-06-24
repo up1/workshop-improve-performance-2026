@@ -6,17 +6,19 @@ const bcrypt = require('bcrypt');
 const app = express();
 app.use(express.json());
 
+// เมื่อ scale ด้วย PM2 cluster แต่ละ worker มี pool ของตัวเอง
+// POOL_MAX ถูกคำนวณใน ecosystem.config.js: floor(190 / instances)
 const pool = new Pool({
-    host: "localhost",
-    port: 5432,
-    database: "orders",
-    user: "user",
-    password: "pass",
+    host: process.env.DB_HOST     || "localhost",
+    port: parseInt(process.env.DB_PORT)     || 5432,
+    database: process.env.DB_NAME || "orders",
+    user: process.env.DB_USER     || "user",
+    password: process.env.DB_PASS || "pass",
 
     // ปรับค่า connection pool ให้เหมาะสมกับ load test
-    max: 190,                          // ต่ำกว่า max_connections=200 เพื่อเผื่อ superuser connections
+    max: parseInt(process.env.POOL_MAX) || 190, // ต่ำกว่า max_connections=200 เพื่อเผื่อ superuser connections
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000     // เพิ่มจาก 2s เป็น 10s รองรับ queue ช่วง spike
+    connectionTimeoutMillis: 10000              // เพิ่มจาก 2s เป็น 10s รองรับ queue ช่วง spike
 });
 
 // กัน brute force / login storm ต่อ IP หรือจัดการใน API Gateway / WAF
@@ -70,7 +72,7 @@ app.post("/login", async (req, res) => {
 
         const user = result.rows[0];
 
-        // Comparing password with bcryptjs instead of bcrypt to avoid blocking the event loop
+        // native bcrypt offloads to C++ threadpool — does not block the Node.js event loop
         if (!(await bcrypt.compare(password, user.password_hash))) {
             writeAuditAsync({
                 userId: user.id,
