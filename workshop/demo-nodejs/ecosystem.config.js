@@ -7,7 +7,7 @@ const instances         = os.cpus().length;          // ใช้ทุก core 
 const poolMax           = Math.floor(PG_MAX_CONNECTIONS / instances);
 
 // ตรวจสอบค่าที่คำนวณได้ก่อน deploy
-console.log(`PM2 cluster: ${instances} workers × pool.max ${poolMax} = ${instances * poolMax} DB connections`);
+console.log(`PM2 cluster: ${instances} workers x pool.max ${poolMax} = ${instances * poolMax} DB connections`);
 
 module.exports = {
     apps: [
