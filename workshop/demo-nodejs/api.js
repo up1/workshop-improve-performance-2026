@@ -1,7 +1,7 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
 const { Pool } = require("pg");
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 
 const app = express();
 app.use(express.json());
@@ -13,10 +13,10 @@ const pool = new Pool({
     user: "user",
     password: "pass",
 
-    // จำกัด connection ไม่ให้ยิง DB จนล่ม
-    max: 50,
+    // ปรับค่า connection pool ให้เหมาะสมกับ load test
+    max: 190,                          // ต่ำกว่า max_connections=200 เพื่อเผื่อ superuser connections
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000
+    connectionTimeoutMillis: 10000     // เพิ่มจาก 2s เป็น 10s รองรับ queue ช่วง spike
 });
 
 // กัน brute force / login storm ต่อ IP หรือจัดการใน API Gateway / WAF

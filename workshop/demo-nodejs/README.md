@@ -64,3 +64,44 @@ $curl -X POST http://localhost:3000/login -H "Content-Type: application/json" -d
 ```
 $k6 run login_load_test.js
 ```
+
+## PostgreSQL :: Slow query log
+```
+# Enable slow query log
+ALTER SYSTEM SET log_min_duration_statement = 1000; -- 1 second
+SELECT pg_reload_conf();
+```
+
+Query for slow query
+```
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+
+SELECT
+  query,
+  calls,
+  ROUND(total_exec_time::numeric, 2) AS total_time_ms,
+  ROUND(mean_exec_time::numeric, 2) AS avg_time_ms,
+  ROUND(max_exec_time::numeric, 2) AS max_time_ms,
+  rows
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
+LIMIT 20;
+```
+
+Query for top 20 queries by total execution time
+```
+SELECT
+  query,
+  calls,
+  ROUND(total_exec_time::numeric, 2) AS total_time_ms,
+  ROUND(mean_exec_time::numeric, 2) AS avg_time_ms,
+  rows
+FROM pg_stat_statements
+ORDER BY total_exec_time DESC
+LIMIT 20;
+```
+
+Clear statistics
+```
+SELECT pg_stat_statements_reset();
+```
