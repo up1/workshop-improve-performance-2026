@@ -105,3 +105,14 @@ Clear statistics
 ```
 SELECT pg_stat_statements_reset();
 ```
+
+## Improvements
+* Use connection pool with proper configuration (max connections, idle timeout, connection timeout)
+* Use bcrypt for password hashing and verification
+* Use prepared statements to prevent SQL injection
+* Remove unnecessary queries (e.g., checking if user exists before verifying password)
+* Use rate limiting to prevent brute force attacks
+* Use proper indexing on the users table (e.g., index on username and active columns)
+* Use a separate table for login audit to avoid bloating the users table
+  * Use async/await for better readability and error handling
+  * Use messaging queue (e.g., RabbitMQ, Kafka) for login audit to decouple from the main login flow and improve performance
