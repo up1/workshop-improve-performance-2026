@@ -43,7 +43,7 @@ async function writeAuditAsync({ userId, username, success }) {
     });
 }
 app.post("/login", async (req, res) => {
-// app.post("/login", loginLimiter, async (req, res) => {
+    // app.post("/login", loginLimiter, async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
