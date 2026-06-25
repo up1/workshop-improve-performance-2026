@@ -1,6 +1,7 @@
 const express = require("express");
 const { Pool } = require("pg");
 const loginRouter = require("./login");
+const loginPoolRouter = require("./login_pool");
 
 const app = express();
 app.use(express.json());
@@ -22,9 +23,16 @@ const pool = new Pool({
 
 app.use("/login", loginRouter(pool));
 
+// pool ที่ต่อผ่าน PgBouncer (port 6432) สำหรับรองรับ client จำนวนมาก (heavy connection)
+// PgBouncer multiplex client connection -> server connection ของ Postgres แบบ transaction pooling
+const pgbouncerPool = loginPoolRouter.createPgBouncerPool();
+app.use("/login/pool", loginPoolRouter(pgbouncerPool));
+
+
 app.get("/health", async (req, res) => {
     try {
         await pool.query("SELECT 1");
+        await pgbouncerPool.query("SELECT 1");
         res.json({ status: "ok" });
     } catch(err) {
         // show error

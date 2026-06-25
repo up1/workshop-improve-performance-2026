@@ -39,6 +39,10 @@ services:
       RESERVE_POOL_SIZE: 20 # จำนวน connection ที่ pgbouncer จะ reserve ไว้สำหรับ client ที่ connect เข้ามาใหม่
       RESERVE_POOL_TIMEOUT: 5 # จำนวนวินาทีที่ pgbouncer จะรอ connection จาก reserve pool ก่อนที่จะ return error ไปยัง client
       AUTH_TYPE: scram-sha-256 # authentication method
+      # ระบุ userlist ที่มี plaintext password เพื่อให้ pgbouncer ทำ SCRAM ได้ทั้งฝั่ง client และฝั่ง postgres
+      AUTH_FILE: /etc/pgbouncer/userlist.txt
+    volumes:
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
     ports:
       - "6432:5432"
     healthcheck:

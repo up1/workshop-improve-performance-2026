@@ -6,11 +6,11 @@ export const options = {
         login_spike_test: {
             executor: "ramping-vus",
             stages: [
-                { duration: "1m", target: 100 },
-                { duration: "1m", target: 200 },
-                { duration: "1m", target: 350 },
-                { duration: "1m", target: 350 },
-                { duration: "1m", target: 0 }
+                { duration: "30s", target: 100 },
+                { duration: "30s", target: 300 },
+                { duration: "30s", target: 350 },
+                { duration: "30s", target: 350 },
+                { duration: "30s", target: 0 }
             ]
         }
     },
@@ -34,7 +34,7 @@ export default function () {
         }
     };
 
-    const res = http.post("http://localhost:3000/login", payload, params);
+    const res = http.post("http://localhost:3000/login/pool", payload, params);
 
     check(res, {
         "status is 200": (r) => r.status === 200,

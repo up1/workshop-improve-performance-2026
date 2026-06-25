@@ -66,6 +66,35 @@ Load testing with [K6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
 $k6 run login_load_test.js
 ```
 
+## 3. Start PgBouncer with port=6432
+```
+$cd docker
+$docker-compose up -d pgbouncer
+$docker-compose ps
+```
+
+Start server
+```
+$npm install
+$npm start
+```
+
+Check the api with healthcheck
+```
+$curl -X GET http://localhost:3000/health
+```
+
+Test POST /login with username=user1 and password=password
+```
+$curl -X POST http://localhost:3000/login/pool -H "Content-Type: application/json" -d '{"username":"user1","password":"password"}'
+```
+
+Load testing with [K6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
+* [Tuning OS for high load](https://grafana.com/docs/k6/latest/set-up/fine-tune-os/)
+```
+$k6 run login_pool_load_test.js
+```
+
 
 ## 3. Start Redis with port=6379
 ```
