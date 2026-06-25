@@ -9,10 +9,11 @@ app.use(express.json());
 // POOL_MAX ถูกคำนวณใน ecosystem.config.js: floor(190 / instances)
 const pool = new Pool({
     host: process.env.DB_HOST     || "localhost",
-    port: parseInt(process.env.DB_PORT)     || 5432,
+    port: parseInt(process.env.DB_PORT)     || 6432,
     database: process.env.DB_NAME || "orders",
     user: process.env.DB_USER     || "user",
     password: process.env.DB_PASS || "pass",
+    // connectionString: process.env.DATABASE_URL || "postgresql://user:pass@localhost:6432/orders",
 
     // ปรับค่า connection pool ให้เหมาะสมกับ load test
     max: parseInt(process.env.POOL_MAX) || 190, // ต่ำกว่า max_connections=200

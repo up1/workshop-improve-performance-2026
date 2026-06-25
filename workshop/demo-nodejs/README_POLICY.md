@@ -65,7 +65,7 @@ SELECT
     status,
     premium_amount,
     start_date,
-    end_date
+    end_date*
 FROM policies
 WHERE user_id = 1
 ORDER BY start_date DESC
@@ -84,4 +84,12 @@ Create index for performance
 ```
 CREATE INDEX idx_policies_user_id_start_date
 ON policies(user_id, start_date DESC);
+```
+
+Create materialzed view for performance
+```
+CREATE MATERIALIZED VIEW policies_mv AS
+SELECT policy_no, policy_type, status, premium_amount, start_date, end_date, user_id
+FROM policies
+ORDER BY start_date DESC;
 ```
