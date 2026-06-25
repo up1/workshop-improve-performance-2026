@@ -16,14 +16,14 @@ const pool = new Pool({
     password: process.env.DB_PASS || "pass",
 
     // ปรับค่า connection pool ให้เหมาะสมกับ load test
-    max: parseInt(process.env.POOL_MAX) || 190, // ต่ำกว่า max_connections=200 เพื่อเผื่อ superuser connections
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000              // เพิ่มจาก 2s เป็น 10s รองรับ queue ช่วง spike
+    max: parseInt(process.env.POOL_MAX) || 190, // ต่ำกว่า max_connections=200
+    idleTimeoutMillis: 30000,         // ปิด connection ที่ idle เกิน 30s
+    connectionTimeoutMillis: 10000              // รอ connection ไม่เกิน 10s (queuing for spike traffic)
 });
 
 // กัน brute force / login storm ต่อ IP หรือจัดการใน API Gateway / WAF
 const loginLimiter = rateLimit({
-    windowMs: 60 * 1000,
+    windowMs: 60 * 1000, // 1 minute
     limit: 100,
     standardHeaders: true,
     legacyHeaders: false
