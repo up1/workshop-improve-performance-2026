@@ -52,7 +52,7 @@ Check with health endpoint:
 $curl http://localhost:3000/health
 ```
 
-## Testing
+## Testing with login endpoint
 ```
 $curl -X POST http://localhost:3000/login -H "Content-Type: application/json" -d '{"username":"user1","password":"password"}'
 ``` 

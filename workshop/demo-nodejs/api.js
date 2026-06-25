@@ -1,7 +1,6 @@
 const express = require("express");
-const rateLimit = require("express-rate-limit");
 const { Pool } = require("pg");
-const bcrypt = require('bcrypt');
+const loginRouter = require("./login");
 
 const app = express();
 app.use(express.json());
@@ -21,90 +20,7 @@ const pool = new Pool({
     connectionTimeoutMillis: 10000              // รอ connection ไม่เกิน 10s (queuing for spike traffic)
 });
 
-// กัน brute force / login storm ต่อ IP หรือจัดการใน API Gateway / WAF
-const loginLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    limit: 100,
-    standardHeaders: true,
-    legacyHeaders: false
-});
-
-// บันทึก audit log แบบ async ไม่ block response หลัก
-async function writeAuditAsync({ userId, username, success }) {
-    // ไม่ block response หลัก
-    setImmediate(async () => {
-        try {
-            await pool.query(
-                `INSERT INTO login_audit(user_id, username, success)
-         VALUES($1, $2, $3)`,
-                [userId || null, username, success]
-            );
-        } catch (err) {
-            console.error("audit error:", err.message);
-        }
-    });
-}
-app.post("/login", async (req, res) => {
-    // app.post("/login", loginLimiter, async (req, res) => {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        return res.status(400).json({
-            message: "username and password are required"
-        });
-    }
-
-    try {
-        // ใช้ parameterized query เพื่อป้องกัน SQL Injection
-        const result = await pool.query(
-            `SELECT id, username, password_hash
-       FROM users
-       WHERE username = $1
-       AND active = true
-       LIMIT 1`,
-            [username]
-        );
-
-        if (result.rows.length === 0) {
-            writeAuditAsync({ username, success: false });
-            return res.status(401).json({ message: "Invalid username or password" });
-        }
-
-        const user = result.rows[0];
-
-        // native bcrypt offloads to C++ threadpool — does not block the Node.js event loop
-        if (!(await bcrypt.compare(password, user.password_hash))) {
-            writeAuditAsync({
-                userId: user.id,
-                username,
-                success: false
-            });
-
-            return res.status(401).json({ message: "Invalid username or password" });
-        }
-
-        writeAuditAsync({
-            userId: user.id,
-            username,
-            success: true
-        });
-
-        // Return a fake JWT token for demonstration purposes
-        return res.json({
-            token: "fake-jwt-token",
-            user: {
-                id: user.id,
-                username: user.username
-            }
-        });
-    } catch (err) {
-        console.error(err.message);
-
-        return res.status(503).json({
-            message: "Service temporarily unavailable"
-        });
-    }
-});
+app.use("/login", loginRouter(pool));
 
 app.get("/health", async (req, res) => {
     try {
