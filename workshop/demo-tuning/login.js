@@ -2,35 +2,26 @@ const express = require("express");
 const rateLimit = require("express-rate-limit");
 const bcrypt = require("bcrypt");
 
-// กัน brute force / login storm ต่อ IP หรือจัดการใน API Gateway / WAF
-const loginLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    limit: 100,
-    standardHeaders: true,
-    legacyHeaders: false
-});
-
 // บันทึก audit log แบบ async ไม่ block response หลัก
 async function writeAuditAsync(pool, { userId, username, success }) {
     // ไม่ block response หลัก
-    // setImmediate(async () => {
-    //     try {
-    //         await pool.query(
-    //             `INSERT INTO login_audit(user_id, username, success)
-    //      VALUES($1, $2, $3)`,
-    //             [userId || null, username, success]
-    //         );
-    //     } catch (err) {
-    //         console.error("audit error:", err.message);
-    //     }
-    // });
+    setImmediate(async () => {
+        try {
+            await pool.query(
+                `INSERT INTO login_audit(user_id, username, success)
+         VALUES($1, $2, $3)`,
+                [userId || null, username, success]
+            );
+        } catch (err) {
+            console.error("audit error:", err.message);
+        }
+    });
 }
 
 module.exports = function (pool) {
     const router = express.Router();
 
     router.post("/", async (req, res) => {
-        // router.post("/", loginLimiter, async (req, res) => {
         const { username, password } = req.body;
 
         if (!username || !password) {

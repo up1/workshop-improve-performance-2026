@@ -16,20 +16,20 @@ const pool = new Pool({
     // connectionString: process.env.DATABASE_URL || "postgresql://user:pass@localhost:6432/orders",
 
     // ปรับค่า connection pool ให้เหมาะสมกับ load test
-    max: parseInt(process.env.POOL_MAX) || 190, // ต่ำกว่า max_connections=200
+    max: parseInt(process.env.POOL_MAX) || 10, // ต่ำกว่า max_connections=200
     idleTimeoutMillis: 30000,         // ปิด connection ที่ idle เกิน 30s
     connectionTimeoutMillis: 10000              // รอ connection ไม่เกิน 10s (queuing for spike traffic)
 });
 
 app.use("/login", loginRouter(pool));
 
-app.use("/me/policies", require("./policy")(pool));
-
 app.get("/health", async (req, res) => {
     try {
         await pool.query("SELECT 1");
         res.json({ status: "ok" });
-    } catch {
+    } catch(err) {
+        // show error
+        console.log(err);
         res.status(503).json({ status: "db_unavailable" });
     }
 });

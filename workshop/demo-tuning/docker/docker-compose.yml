@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:17
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: [
+      "postgres",
+      "-c", "config_file=/etc/postgresql/postgresql.conf"
+    ]
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+  pgbouncer:
+    image: edoburu/pgbouncer
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: orders
+      DB_USER: user
+      DB_PASS: pass
+      # pooling mode (transaction, session, statement)
+      POOL_MODE: transaction 
+      MAX_CLIENT_CONN: 10000  # จำนวน connection ที่ client สามารถ connect เข้ามาได้
+      DEFAULT_POOL_SIZE: 100  # จำนวน connection ที่ pgbouncer จะสร้างไป connect กับ postgres
+      RESERVE_POOL_SIZE: 20 # จำนวน connection ที่ pgbouncer จะ reserve ไว้สำหรับ client ที่ connect เข้ามาใหม่
+      RESERVE_POOL_TIMEOUT: 5 # จำนวนวินาทีที่ pgbouncer จะรอ connection จาก reserve pool ก่อนที่จะ return error ไปยัง client
+      AUTH_TYPE: scram-sha-256 # authentication method
+    ports:
+      - "6432:5432"
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-h', 'localhost']
+    depends_on:
+      db:
+        condition: service_healthy
+    
