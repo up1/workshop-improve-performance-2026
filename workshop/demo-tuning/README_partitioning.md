@@ -208,3 +208,38 @@ ON orders (order_date DESC, order_id DESC);
 CREATE INDEX idx_order_items_order_date_order_id
 ON orders_items (order_date, order_id, order_item_id);
 ```
+
+## Other solutions
+* Use a materialized view to pre-aggregate the data and query the materialized view instead
+* Use a caching layer (e.g., Redis) to cache the results of the query and serve subsequent requests from the cache
+
+Example of materialized view for daily order summary
+
+```sql
+CREATE MATERIALIZED VIEW daily_order_summary AS
+SELECT
+    o.order_date,
+    COUNT(DISTINCT o.order_id) AS total_orders,
+    SUM(o.total_amount) AS total_amount,
+    COUNT(DISTINCT CASE WHEN o.order_status = 'pending' THEN o.order_id END) AS pending_orders,
+    COUNT(DISTINCT CASE WHEN o.order_status = 'processing' THEN o.order_id END) AS processing_orders,
+    COUNT(DISTINCT CASE WHEN o.order_status = 'shipped' THEN o.order_id END) AS shipped_orders,
+    COUNT(DISTINCT CASE WHEN o.order_status = 'delivered' THEN o.order_id END) AS delivered_orders,
+    COUNT(DISTINCT CASE WHEN o.order_status = 'cancelled' THEN o.order_id END) AS cancelled_orders
+FROM orders o
+GROUP BY o.order_date;
+```
+
+Query the materialized view for daily order summary
+
+```sql
+SELECT *
+FROM daily_order_summary
+WHERE order_date = CURRENT_DATE
+LIMIT 10;
+```
+
+Update the materialized view daily_order_summary every day at midnight using a cron job or a scheduled task in your application.
+```sql
+REFRESH MATERIALIZED VIEW daily_order_summary;
+```
