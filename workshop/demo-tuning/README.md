@@ -155,5 +155,46 @@ Load testing with [K6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
 $k6 run login_cache_load_test.js
 ```
 
+## 5. Improve :: write login_audit to Redis first, then async write to Postgres
+Flow:
+* POST /login/cache/audit
+  * check redis cache for user_id
+  * if not found, query Postgres for user_id and cache it in Redis
+  * write login_audit to Redis first, then async write to Postgres
 
+
+### Start server
+```
+$npm install
+$npm start
+```
+
+Check the api with healthcheck
+```
+$curl -X GET http://localhost:3000/health
+```
+
+Login with cache
+```
+$curl -X POST http://localhost:3000/login/cache/audit -H "Content-Type: application/json" -d '{"username":"user1","password":"password"}'
+```
+
+Load testing with [K6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
+* [Tuning OS for high load](https://grafana.com/docs/k6/latest/set-up/fine-tune-os/)
+```
+$k6 run login_cache_audit_load_test.js
+```
+
+Check data in Redis
+```
+$redis-cli -h localhost -p 6379
+
+// Count keys in redis
+> dbsize
+
+// Check the first 10 items in the login audit queue
+> LRANGE login:audit:queue 0 10
+
+// Check all items in the login audit queue
+> LRANGE login:audit:queue 0 -1
 

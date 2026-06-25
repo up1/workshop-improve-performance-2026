@@ -23,7 +23,7 @@ function createRedisClient() {
         url: process.env.REDIS_URL || "redis://localhost:6379",
         socket: {
             // reconnect แบบ backoff กัน reconnect ตอน Redis ล่ม
-            reconnectStrategy: (retries) => Math.min(retries * 50, 2000), 
+            reconnectStrategy: (retries) => Math.min(retries * 50, 2000),
         },
     });
 
