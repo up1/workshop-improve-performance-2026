@@ -2,6 +2,7 @@ const express = require("express");
 const { Pool } = require("pg");
 const loginRouter = require("./login");
 const loginPoolRouter = require("./login_pool");
+const loginCacheRouter = require("./login_cache");
 
 const app = express();
 app.use(express.json());
@@ -28,11 +29,18 @@ app.use("/login", loginRouter(pool));
 const pgbouncerPool = loginPoolRouter.createPgBouncerPool();
 app.use("/login/pool", loginPoolRouter(pgbouncerPool));
 
+// Redis read-through cache: เช็ค Redis ก่อน ถ้า miss ค่อย query Postgres แล้ว cache ไว้
+// warmup user_id ล่วงหน้าได้ด้วย: node initial_cache.js
+const redisClient = loginCacheRouter.createRedisClient();
+redisClient.connect().catch((err) => console.error("redis connect error:", err.message));
+app.use("/login/cache", loginCacheRouter(pool, redisClient));
+
 
 app.get("/health", async (req, res) => {
     try {
         await pool.query("SELECT 1");
         await pgbouncerPool.query("SELECT 1");
+        await redisClient.ping();
         res.json({ status: "ok" });
     } catch(err) {
         // show error

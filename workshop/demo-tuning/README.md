@@ -1,4 +1,7 @@
 # Demo :: Tuning Performance
+* NodeJS
+* Postgres
+* Redis
 
 
 ## 1. Start Postgres with port=5432
@@ -95,10 +98,62 @@ Load testing with [K6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
 $k6 run login_pool_load_test.js
 ```
 
+## 4. Start Redis with port=6379
+* [Redis lib](https://redis.io/docs/latest/develop/clients/nodejs/)
 
-## 3. Start Redis with port=6379
 ```
 $cd docker
 $docker-compose up -d redis
 $docker-compose ps
 ```
+
+### Workflow
+* Initial cache with Redis
+* POST /login/cache
+  * check redis cache for user_id
+  * if not found, query Postgres for user_id and cache it in Redis
+
+Initial cache from db to redis
+```
+$node initial_cache.js 
+```
+
+Check data in redis
+```
+$redis-cli -h localhost -p 6379
+
+// Count keys in redis
+> dbsize
+
+// Delete all keys in redis
+> flushall
+
+// Stat of hit or miss
+$redis-cli INFO stats | grep keyspace
+$redis-cli --stat
+```
+
+### Start server
+```
+$npm install
+$npm start
+```
+
+Check the api with healthcheck
+```
+$curl -X GET http://localhost:3000/health
+```
+
+Login with cache
+```
+$curl -X POST http://localhost:3000/login/cache -H "Content-Type: application/json" -d '{"username":"user1","password":"password"}'
+```
+
+Load testing with [K6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
+* [Tuning OS for high load](https://grafana.com/docs/k6/latest/set-up/fine-tune-os/)
+```
+$k6 run login_cache_load_test.js
+```
+
+
+
