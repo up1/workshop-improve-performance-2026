@@ -26,7 +26,7 @@ module.exports = function (pool) {
 
         if (!username || !password) {
             return res.status(400).json({
-                message: "username and password are required"
+                message: "username and password are required",
             });
         }
 
@@ -43,7 +43,9 @@ module.exports = function (pool) {
 
             if (result.rows.length === 0) {
                 writeAuditAsync(pool, { username, success: false });
-                return res.status(401).json({ message: "Invalid username or password" });
+                return res
+                    .status(401)
+                    .json({ message: "Invalid username or password" });
             }
 
             const user = result.rows[0];
@@ -53,16 +55,19 @@ module.exports = function (pool) {
                 writeAuditAsync(pool, {
                     userId: user.id,
                     username,
-                    success: false
+                    success: false,
                 });
 
-                return res.status(401).json({ message: "Invalid username or password" });
+                return res
+                    .status(401)
+                    .json({ message: "Invalid username or password" });
             }
 
+            // Successful login
             writeAuditAsync(pool, {
                 userId: user.id,
                 username,
-                success: true
+                success: true,
             });
 
             // Return a fake JWT token for demonstration purposes
@@ -70,14 +75,12 @@ module.exports = function (pool) {
                 token: "fake-jwt-token",
                 user: {
                     id: user.id,
-                    username: user.username
-                }
+                    username: user.username,
+                },
             });
         } catch (err) {
-            console.error(err.message);
-
             return res.status(503).json({
-                message: "Service temporarily unavailable"
+                message: "Service temporarily unavailable",
             });
         }
     });

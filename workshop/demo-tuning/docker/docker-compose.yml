@@ -13,6 +13,17 @@ services:
     ]
     healthcheck:
       test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      retries: 3
+
+  redis:
+    image: redis:8
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 3
   pgbouncer:
     image: edoburu/pgbouncer
     environment:
@@ -32,6 +43,8 @@ services:
       - "6432:5432"
     healthcheck:
       test: ['CMD', 'pg_isready', '-h', 'localhost']
+      interval: 5s
+      retries: 3
     depends_on:
       db:
         condition: service_healthy
