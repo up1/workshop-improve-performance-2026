@@ -1,4 +1,4 @@
-# Postgresql table partitioning
+# [Postgresql table partitioning](https://www.postgresql.org/docs/current/ddl-partitioning.html)
 * Orders table is partitioned by range on order_date column
 * Each partition is created for a specific month, and the partition name is in the format of `orders_YYYY_MM`
 * Queries on the orders table will automatically be routed to the appropriate partition based on the order_date value
