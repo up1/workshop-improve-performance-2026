@@ -122,5 +122,4 @@ module.exports = function (pool) {
     return router;
 };
 
-// export helper เผื่อ api.js อยากสร้าง pgbouncer pool เองและ reuse กับ /health
 module.exports.createPgBouncerPool = createPgBouncerPool;
