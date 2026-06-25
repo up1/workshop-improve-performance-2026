@@ -198,3 +198,28 @@ $redis-cli -h localhost -p 6379
 // Check all items in the login audit queue
 > LRANGE login:audit:queue 0 -1
 
+## 6. Scale NodeJS process with PM2
+* [PM2](https://pm2.keymetrics.io/docs/usage/quick-start/)
+
+```
+# Install PM2 globally (once)
+$npm install -g pm2
+
+# Start with cluster mode
+$pm2 start ecosystem.config.js
+
+# List all processes
+$pm2 list
+
+# Logs
+$pm2 logs login-api
+
+# Monitor
+$pm2 monit
+
+# Reload zero-downtime (rolling restart)
+$pm2 reload login-api
+
+# Stop
+$pm2 stop login-api
+```
