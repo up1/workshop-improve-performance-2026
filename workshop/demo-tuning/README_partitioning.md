@@ -182,6 +182,7 @@ JOIN products p
 WHERE o.order_date = COALESCE(CURRENT_DATE)
 GROUP BY o.order_id, o.order_date, o.total_amount, o.order_status
 ORDER BY o.order_date DESC
+LIMIT 10
 ````
 
 ## Start server
@@ -192,6 +193,18 @@ $npm start
 
 ## Test GET /orders/summary/daily
 ```
-$curl -X GET "http://localhost:3000/orders/summary/daily
-$curl -X GET "http://localhost:3000/orders/summary/daily?date=2026-01-01
+$curl -X GET "http://localhost:3000/orders/summary/daily"
+$curl -X GET "http://localhost:3000/orders/summary/daily?date=2026-01-01"
 ``` 
+
+## Tuning SQL query
+* Add index on order_date column of orders table
+* Add LIMIT clause to limit the number of rows returned by the query
+
+```sql
+CREATE INDEX idx_orders_order_date_order_id
+ON orders (order_date DESC, order_id DESC);
+
+CREATE INDEX idx_order_items_order_date_order_id
+ON orders_items (order_date, order_id, order_item_id);
+```
