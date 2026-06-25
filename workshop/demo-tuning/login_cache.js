@@ -97,7 +97,7 @@ module.exports = function (pool, redisClient) {
                     user = JSON.parse(cached); // { id, password_hash }
                 }
             } catch (err) {
-                // ถ้า Redis ล่ม/parse พัง ก็ fallback ไป query Postgres ต่อได้
+                // ถ้า Redis ล่ม/parse พัง ให้ fallback ไป query Postgres ต่อได้
                 console.error("redis get error:", err.message);
             }
 
