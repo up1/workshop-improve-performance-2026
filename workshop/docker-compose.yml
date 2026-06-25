@@ -11,22 +11,6 @@ services:
       "postgres",
       "-c", "config_file=/etc/postgresql/postgresql.conf"
     ]
-  pgbouncer:
-    image: edoburu/pgbouncer
-    environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: orders
-      DB_USER: user
-      DB_PASS: md51a1dc91c907325c69271ddf0c944bc72
-      # pooling mode (transaction, session, statement)
-      POOL_MODE: transaction 
-      MAX_CLIENT_CONN: 10000  # จำนวน connection ที่ client สามารถ connect เข้ามาได้
-      DEFAULT_POOL_SIZE: 100  # จำนวน connection ที่ pgbouncer จะสร้างไป connect กับ postgres
-      RESERVE_POOL_SIZE: 20 # จำนวน connection ที่ pgbouncer จะ reserve ไว้สำหรับ client ที่ connect เข้ามาใหม่
-      RESERVE_POOL_TIMEOUT: 5 # จำนวนวินาทีที่ pgbouncer จะรอ connection จาก reserve pool ก่อนที่จะ return error ไปยัง client
-      AUTH_TYPE: md5
-    ports:
-      - "6432:5432"
-    depends_on:
-      - db
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+    
