@@ -22,6 +22,8 @@ const pool = new Pool({
 
 app.use("/login", loginRouter(pool));
 
+app.use("/me/policies", require("./policy")(pool));
+
 app.get("/health", async (req, res) => {
     try {
         await pool.query("SELECT 1");
