@@ -4,6 +4,7 @@ const loginRouter = require("./login");
 const loginPoolRouter = require("./login_pool");
 const loginCacheRouter = require("./login_cache");
 const loginCacheAuditRouter = require("./login_cache_audit");
+const orderReportRouter = require("./order_report");
 
 const app = express();
 app.use(express.json());
@@ -39,6 +40,9 @@ app.use("/login/cache", loginCacheRouter(pool, redisClient));
 // เขียน login_audit ลง Redis ก่อน แล้ว background worker ค่อย batch flush ลง Postgres
 // ลด write load + latency ที่ยิงตรงไป Postgres ต่อ request
 app.use("/login/cache/audit", loginCacheAuditRouter(pool, redisClient));
+
+// รายงานสรุปออเดอร์รายวัน join orders + orders_items + products
+app.use("/orders", orderReportRouter(pool));
 
 
 app.get("/health", async (req, res) => {
