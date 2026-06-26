@@ -1,9 +1,9 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 
-// reuse Redis client + cache key helpers จาก login_cache.js (DRY)
+// reuse Redis pool + cache key helpers จาก login_cache.js (DRY)
 const {
-    createRedisClient,
+    createRedisPool,
     userCacheKey,
     USER_CACHE_TTL_SECONDS,
 } = require("./login_cache");
@@ -120,7 +120,7 @@ function startAuditFlusher(pool, redis) {
  *        Redis client (ถ้าไม่ส่งมา จะสร้างให้อัตโนมัติ)
  */
 module.exports = function (pool, redisClient) {
-    const redis = redisClient || createRedisClient();
+    const redis = redisClient || createRedisPool();
 
     // connect แบบ lazy — ถ้ายังไม่ได้ต่อให้ต่อให้ (idempotent)
     if (!redis.isOpen) {
@@ -130,7 +130,7 @@ module.exports = function (pool, redisClient) {
     }
 
     // เริ่ม background worker ที่ flush audit จาก Redis -> Postgres
-    startAuditFlusher(pool, redis);
+    // startAuditFlusher(pool, redis);
 
     const router = express.Router();
 

@@ -26,23 +26,23 @@ const pool = new Pool({
 
 app.use("/login", loginRouter(pool));
 
-// pool ที่ต่อผ่าน PgBouncer (port 6432) สำหรับรองรับ client จำนวนมาก (heavy connection)
-// PgBouncer multiplex client connection -> server connection ของ Postgres แบบ transaction pooling
-const pgbouncerPool = loginPoolRouter.createPgBouncerPool();
-app.use("/login/pool", loginPoolRouter(pgbouncerPool));
+// // pool ที่ต่อผ่าน PgBouncer (port 6432) สำหรับรองรับ client จำนวนมาก (heavy connection)
+// // PgBouncer multiplex client connection -> server connection ของ Postgres แบบ transaction pooling
+// const pgbouncerPool = loginPoolRouter.createPgBouncerPool();
+// app.use("/login/pool", loginPoolRouter(pgbouncerPool));
 
-// Redis read-through cache: เช็ค Redis ก่อน ถ้า miss ค่อย query Postgres แล้ว cache ไว้
-// warmup user_id ล่วงหน้าได้ด้วย: node initial_cache.js
-const redisClient = loginCacheRouter.createRedisClient();
+// // Redis read-through cache: เช็ค Redis ก่อน ถ้า miss ค่อย query Postgres แล้ว cache ไว้
+// // warmup user_id ล่วงหน้าได้ด้วย: node initial_cache.js
+const redisClient = loginCacheRouter.createRedisPool();
 redisClient.connect().catch((err) => console.error("redis connect error:", err.message));
 app.use("/login/cache", loginCacheRouter(pool, redisClient));
 
-// เขียน login_audit ลง Redis ก่อน แล้ว background worker ค่อย batch flush ลง Postgres
-// ลด write load + latency ที่ยิงตรงไป Postgres ต่อ request
+// // เขียน login_audit ลง Redis ก่อน แล้ว background worker ค่อย batch flush ลง Postgres
+// // ลด write load + latency ที่ยิงตรงไป Postgres ต่อ request
 app.use("/login/cache/audit", loginCacheAuditRouter(pool, redisClient));
 
-// รายงานสรุปออเดอร์รายวัน join orders + orders_items + products
-app.use("/orders", orderReportRouter(pool));
+// // รายงานสรุปออเดอร์รายวัน join orders + orders_items + products
+// app.use("/orders", orderReportRouter(pool));
 
 
 app.get("/health", async (req, res) => {

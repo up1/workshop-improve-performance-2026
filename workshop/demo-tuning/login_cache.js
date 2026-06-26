@@ -1,6 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
-const { createClient } = require("redis");
+const { createClient, createClientPool } = require("redis");
 
 // ----------------------------------------------------------------------------
 // Redis cache config
@@ -9,6 +9,17 @@ const { createClient } = require("redis");
 const USER_CACHE_PREFIX = "login:user:";
 // TTL กัน cache ค้างนานเกินไป (ข้อมูล user อาจถูก disable/เปลี่ยนรหัส)
 const USER_CACHE_TTL_SECONDS = parseInt(process.env.REDIS_USER_TTL) || 3600;
+
+// ----------------------------------------------------------------------------
+// Redis connection pool config
+// ----------------------------------------------------------------------------
+// แนวคิด: ใช้ connection pool แทน client เดี่ยว เพื่อรองรับ concurrency สูง
+//  - client เดี่ยว = 1 TCP connection ทุก command ต้องต่อคิวบน socket เดียว
+//    (head-of-line blocking) ทำให้ command ที่ช้าหน่วง command อื่น ๆ
+//  - pool กระจาย command ไปหลาย connection พร้อมกัน -> throughput สูงขึ้น
+//    ภายใต้ traffic spike และลด tail latency
+const REDIS_POOL_MIN = parseInt(process.env.REDIS_POOL_MIN) || 5;
+const REDIS_POOL_MAX = parseInt(process.env.REDIS_POOL_MAX) || 30;
 
 /**
  * สร้าง Redis client (node-redis v6)
@@ -31,6 +42,35 @@ function createRedisClient() {
     client.on("error", (err) => console.error("redis error:", err.message));
 
     return client;
+}
+
+/**
+ * สร้าง Redis connection pool (node-redis v6 createClientPool)
+ * docs: https://github.com/redis/node-redis/blob/master/docs/pool.md
+ *
+ * pool exposes API เดียวกับ client (get/set/rPush/lPopCount, isOpen, connect,
+ * event "error") จึงเป็น drop-in replacement ของ createRedisClient
+ * โดย pool จะหยิบ connection ที่ว่างมารัน command ให้อัตโนมัติ
+ */
+function createRedisPool() {
+    const pool = createClientPool(
+        {
+            url: process.env.REDIS_URL || "redis://localhost:6379",
+            socket: {
+                // reconnect แบบ backoff กัน reconnect storm ตอน Redis ล่ม
+                reconnectStrategy: (retries) => Math.min(retries * 50, 2000),
+            },
+        },
+        {
+            minimum: REDIS_POOL_MIN,
+            maximum: REDIS_POOL_MAX,
+        }
+    );
+
+    // อย่าให้ error ของ Redis ทำให้ process ตาย — แค่ log แล้ว fallback ไป Postgres
+    pool.on("error", (err) => console.error("redis pool error:", err.message));
+
+    return pool;
 }
 
 // สร้าง cache key จาก username
@@ -183,6 +223,7 @@ module.exports = function (pool, redisClient) {
 
 // export helper เผื่อ api.js / initial_cache.js อยาก reuse client และ key เดียวกัน
 module.exports.createRedisClient = createRedisClient;
+module.exports.createRedisPool = createRedisPool;
 module.exports.userCacheKey = userCacheKey;
 module.exports.USER_CACHE_PREFIX = USER_CACHE_PREFIX;
 module.exports.USER_CACHE_TTL_SECONDS = USER_CACHE_TTL_SECONDS;
