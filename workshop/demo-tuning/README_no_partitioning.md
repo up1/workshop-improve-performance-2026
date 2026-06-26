@@ -1,4 +1,4 @@
-# Postgresql table 
+# [Postgresql table 
 
 ## Table structure
 
@@ -182,5 +182,13 @@ LIMIT 10;
 
 Update the materialized view daily_order_summary every day at midnight using a cron job or a scheduled task in your application.
 ```sql
+REFRESH MATERIALIZED VIEW daily_order_summary;
+```
+
+Add new data to the materialized view by inserting new orders into the orders table and refreshing the materialized view.
+```sql
+INSERT INTO orders (order_date, customer_id, total_amount, order_status)
+VALUES (CURRENT_DATE, 12345, 100.00, 'pending');
+
 REFRESH MATERIALIZED VIEW daily_order_summary;
 ```
