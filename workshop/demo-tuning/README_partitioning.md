@@ -4,34 +4,6 @@
 - Each partition is created for a specific month, and the partition name is in the format of `orders_YYYY_MM`
 - Queries on the orders table will automatically be routed to the appropriate partition based on the order_date value
 
-## Table structure before partitioning
-
-```sql
-CREATE TABLE products (
-    product_id SERIAL PRIMARY KEY,
-    product_name VARCHAR(255) NOT NULL,
-    price DECIMAL(10, 2) NOT NULL
-);
-
-CREATE TABLE orders (
-    order_id SERIAL PRIMARY KEY,
-    order_date DATE NOT NULL,
-    customer_id INT NOT NULL,
-    total_amount DECIMAL(10, 2) NOT NULL,
-    order_status VARCHAR(50) NOT NULL CHECK (order_status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled'))
-);
-
-CREATE TABLE orders_items (
-    order_item_id SERIAL PRIMARY KEY,
-    order_id INT NOT NULL,
-    order_date DATE NOT NULL,
-    product_id INT NOT NULL,
-    quantity INT NOT NULL,
-    price DECIMAL(10, 2) NOT NULL,
-    FOREIGN KEY (order_id) REFERENCES orders(order_id)
-);
-```
-
 ## Table strcuture of orders + orders_items + orders_status tables with partitioning
 
 ```sql
