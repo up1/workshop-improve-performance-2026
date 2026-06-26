@@ -1,4 +1,4 @@
-# [Postgresql table 
+# Postgresql table 
 
 ## Table structure
 
