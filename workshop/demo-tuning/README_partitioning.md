@@ -4,7 +4,35 @@
 - Each partition is created for a specific month, and the partition name is in the format of `orders_YYYY_MM`
 - Queries on the orders table will automatically be routed to the appropriate partition based on the order_date value
 
-## Table strcuture of orders + orders_items + orders_status tables
+## Table structure before partitioning
+
+```sql
+CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL
+);
+
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    order_date DATE NOT NULL,
+    customer_id INT NOT NULL,
+    total_amount DECIMAL(10, 2) NOT NULL,
+    order_status VARCHAR(50) NOT NULL CHECK (order_status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled'))
+);
+
+CREATE TABLE orders_items (
+    order_item_id SERIAL PRIMARY KEY,
+    order_id INT NOT NULL,
+    order_date DATE NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id)
+);
+```
+
+## Table strcuture of orders + orders_items + orders_status tables with partitioning
 
 ```sql
 CREATE TABLE products (
@@ -108,6 +136,8 @@ Products table = 100,000 rows
 INSERT INTO products (product_name, price)
 SELECT 'Product ' || i, (random() * 100)::numeric(10, 2)
 FROM generate_series(1, 100000) AS s(i);
+
+SELECT count(*) FROM products;
 ```
 
 Orders table = 1,000,000 rows
@@ -159,7 +189,7 @@ GROUP BY inhrelid;
 ## Analyse Query
 
 ````sql
-EXPLAIN ANALYZE
+EXPLAIN (ANALYZE, BUFFERS)
 SELECT
     o.order_id,
     jsonb_agg(
@@ -185,6 +215,15 @@ ORDER BY o.order_date DESC
 LIMIT 10
 ````
 
+List of problems found in the query plan:
+* The query is performing a sequential scan on the orders table, which is slow for large tables
+* GROUP BY 
+  * Large Aggregation Memory footprint (increased memory usage with `work_mem` setting)
+* Redundant Final Sorting
+  * Filter by o.order_date = CURRENT_DATE and then ORDER BY o.order_date DESC. Since all rows have the exact same date, the sort operation consumes memory and CPU for no reason
+* Late Limit Filtering
+  * The query joins orders, orders_items, and products across all of today's orders before slicing the final result down to 10 rows
+
 ## Start server
 ```
 $npm install
@@ -197,7 +236,44 @@ $curl -X GET "http://localhost:3000/orders/summary/daily"
 $curl -X GET "http://localhost:3000/orders/summary/daily?date=2026-01-01"
 ``` 
 
-## Tuning SQL query
+## Tuning SQL query without partitioning
+```
+EXPLAIN (ANALYZE, BUFFERS)
+WITH filtered_orders AS (
+    -- Step 1: Fetch only the 10 orders we actually need (Minimal memory footprint)
+    SELECT order_id, total_amount, order_status, order_date
+    FROM orders
+    WHERE order_date = CURRENT_DATE
+    LIMIT 10
+)
+SELECT
+    fo.order_id,
+    -- Step 3: Build JSON aggregates only for those 10 specific rows
+    jsonb_agg(
+        jsonb_build_object(
+            'product_name', p.product_name,
+            'quantity', oi.quantity,
+            'price', oi.price
+        )
+        ORDER BY oi.order_item_id
+    ) AS products,
+    fo.total_amount,
+    fo.order_status,
+    fo.order_date
+FROM filtered_orders fo
+-- Step 2: Join items and products only for the 10 orders
+JOIN orders_items oi ON oi.order_id = fo.order_id
+JOIN products p ON p.product_id = oi.product_id
+GROUP BY fo.order_id, fo.order_date, fo.total_amount, fo.order_status;
+```
+
+Create index on order_date column of orders table and order_id column of orders_items table
+```sql
+CREATE INDEX idx_orders_date ON orders (order_date);
+CREATE INDEX idx_orders_items_order_id ON orders_items (order_id);
+```
+
+## Tuning SQL query with partitioning
 * Add index on order_date column of orders table
 * Add LIMIT clause to limit the number of rows returned by the query
 
@@ -207,6 +283,10 @@ ON orders (order_date DESC, order_id DESC);
 
 CREATE INDEX idx_order_items_order_date_order_id
 ON orders_items (order_date, order_id, order_item_id);
+
+
+CREATE INDEX idx_orders_date ON orders (order_date);
+CREATE INDEX idx_orders_items_order_id ON orders_items (order_id);
 ```
 
 ## Other solutions
