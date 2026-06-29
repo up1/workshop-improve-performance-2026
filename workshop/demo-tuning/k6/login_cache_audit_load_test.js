@@ -6,10 +6,10 @@ export const options = {
         login_spike_test: {
             executor: "ramping-vus",
             stages: [
-                { duration: "30s", target: 100 },
-                { duration: "30s", target: 300 },
-                { duration: "30s", target: 350 },
-                { duration: "30s", target: 350 },
+                { duration: "30s", target: 500 },
+                { duration: "30s", target: 800 },
+                { duration: "30s", target: 1000 },
+                { duration: "30s", target: 1000 },
                 { duration: "30s", target: 0 }
             ]
         }

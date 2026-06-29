@@ -27,6 +27,8 @@ module.exports = {
                 DB_NAME  : 'orders',
                 DB_USER  : 'user',
                 DB_PASS  : 'pass',
+                REDIS_POOL_MAX : 30,        // แต่ละ worker ได้รับ pool size ที่คำนวณแล้ว
+                REDIS_POOL_MIN : 5,
             }
         }
     ]

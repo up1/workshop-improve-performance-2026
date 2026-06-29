@@ -5,13 +5,12 @@ export const options = {
     scenarios: {
         login_spike_test: {
             executor: "ramping-vus",
+            startVUs: 0,
             stages: [
-                { duration: "30s", target: 100 },
-                { duration: "30s", target: 300 },
-                { duration: "30s", target: 350 },
-                { duration: "30s", target: 350 },
-                { duration: "30s", target: 0 }
-            ]
+                { duration: '1m', target: 1000 }, // Ramp up to 1k users in 1 minute
+                { duration: '2m', target: 1000 }, // Sustain 1k users for 2 minutes
+                { duration: '30s', target: 0 },     // Ramp down to 0
+            ],
         }
     },
     thresholds: {

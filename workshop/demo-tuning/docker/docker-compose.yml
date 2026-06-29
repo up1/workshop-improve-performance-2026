@@ -15,15 +15,47 @@ services:
       test: ['CMD', 'pg_isready', '-U', 'postgres']
       interval: 5s
       retries: 3
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+
+  posgres_exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:pass@db:5432/orders?sslmode=disable"
+    depends_on:
+      db:
+        condition: service_healthy
 
   redis:
     image: redis:8
     ports:
       - "6379:6379"
+    command: ["redis-server", "--maxclients", "15000", "--appendonly", "yes"]
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       retries: 3
+  
+  redis_exporter:
+    image: oliver006/redis_exporter
+    ports:
+      - "9121:9121"
+    command:
+      - "--redis.addr=redis://redis:6379"
+      - "--web.listen-address=:9121"
+      - "--web.telemetry-path=/metrics"
+    depends_on:
+      redis:
+        condition: service_healthy
+
   pgbouncer:
     image: edoburu/pgbouncer
     environment:
@@ -35,14 +67,20 @@ services:
       # pooling mode (transaction, session, statement)
       POOL_MODE: transaction 
       MAX_CLIENT_CONN: 10000  # จำนวน connection ที่ client สามารถ connect เข้ามาได้
-      DEFAULT_POOL_SIZE: 100  # จำนวน connection ที่ pgbouncer จะสร้างไป connect กับ postgres
+      DEFAULT_POOL_SIZE: 300  # จำนวน connection ที่ pgbouncer จะสร้างไป connect กับ postgres
+      MIN_POOL_SIZE: 50 # จำนวน connection ขั้นต่ำที่ pgbouncer จะสร้างไป connect กับ postgres
       RESERVE_POOL_SIZE: 20 # จำนวน connection ที่ pgbouncer จะ reserve ไว้สำหรับ client ที่ connect เข้ามาใหม่
       RESERVE_POOL_TIMEOUT: 5 # จำนวนวินาทีที่ pgbouncer จะรอ connection จาก reserve pool ก่อนที่จะ return error ไปยัง client
       AUTH_TYPE: scram-sha-256 # authentication method
       # ระบุ userlist ที่มี plaintext password เพื่อให้ pgbouncer ทำ SCRAM ได้ทั้งฝั่ง client และฝั่ง postgres
       AUTH_FILE: /etc/pgbouncer/userlist.txt
+      ADMIN_USERS: admin,user #
     volumes:
       - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
     ports:
       - "6432:5432"
     healthcheck:
@@ -51,5 +89,15 @@ services:
       retries: 3
     depends_on:
       db:
+        condition: service_healthy
+
+  pgbouncer_exporter:
+    image: prometheuscommunity/pgbouncer-exporter
+    ports:
+      - "9127:9127"
+    environment:
+      - PGBOUNCER_EXPORTER_CONNECTION_STRING=postgres://admin:pass@pgbouncer:5432/pgbouncer?sslmode=disable
+    depends_on:
+      pgbouncer:
         condition: service_healthy
     

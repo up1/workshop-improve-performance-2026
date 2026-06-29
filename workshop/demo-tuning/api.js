@@ -28,8 +28,8 @@ app.use("/login", loginRouter(pool));
 
 // // pool ที่ต่อผ่าน PgBouncer (port 6432) สำหรับรองรับ client จำนวนมาก (heavy connection)
 // // PgBouncer multiplex client connection -> server connection ของ Postgres แบบ transaction pooling
-// const pgbouncerPool = loginPoolRouter.createPgBouncerPool();
-// app.use("/login/pool", loginPoolRouter(pgbouncerPool));
+const pgbouncerPool = loginPoolRouter.createPgBouncerPool();
+app.use("/login/pool", loginPoolRouter(pgbouncerPool));
 
 // // Redis read-through cache: เช็ค Redis ก่อน ถ้า miss ค่อย query Postgres แล้ว cache ไว้
 // // warmup user_id ล่วงหน้าได้ด้วย: node initial_cache.js
